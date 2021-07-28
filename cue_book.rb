@@ -15,26 +15,37 @@ class CueBook
   UTF_BOM = "\xEF\xBB\xBF"
   attr_reader :headers, :tracks
 
-  def initialize(file, duration_cue = nil)
-    @file = file
-    @duration_cue = duration_cue
-    @raw = nil
-    @headers_raw = []
-    @headers = []
+  def initialize(path: nil, duration: nil)
+    @path = path
+    @duration = duration
+    @file = nil
+    @headers = CueHeaders.new
     @tracks = []
-    parse_cue
   end
 
-  def load_cue
-    @raw = IO.read(@file, :encoding => 'UTF-8')
-    @raw.delete! UTF_BOM if @raw.include? UTF_BOM
+  def self.new(path: nil, duration: nil)
+    object = allocate
+    object.send(:initialize, path: path, duration: duration)
+    object
   end
 
-  def parse_cue
-    load_cue
-    set_headers
-    split_tracks
-    parse_track
+  def self.parse_from_file(path)
+    object = allocate
+    object.send(:initialize, path: path)
+
+    object.load_cue(path)
+    object.set_headers
+    object.split_tracks
+    object.parse_track
+    object
+  end
+
+  def load_cue(path)
+    @file = IO.read(path, :encoding => 'UTF-8')
+    @file.delete! UTF_BOM if @file.include? UTF_BOM
+  rescue Errno::ENOENT
+    p "Error. File not found: #{path}"
+    exit
   end
 
   def parse_track
@@ -46,34 +57,38 @@ class CueBook
   end
 
   def set_headers
-    get_headers
+    headers_lines = get_headers_lines
     # DUP тк в CueHeaders мы его стираем по ходу парсинга
     # иначе не ворк next if index <= @headers_raw.size в split_tracks
-    @headers = CueHeaders.new(@headers_raw.dup)
-  end
-
-  def get_headers
-    @raw.each_line do |line|
-      @headers_raw.push line
-      break if line =~ /^FILE\s.*/i
-    end
+    @headers = CueHeaders.parse_headers(headers_lines.dup)
   end
 
   def split_tracks
-    index = 0
     track = []
+    trigger = false
 
-    @raw.each_line do |line|
-      index += 1
-      next if index <= @headers_raw.size
+    @file.each_line do |line|
+      trigger = true if line =~ /^\s+TRACK\s.*/i
+      next unless trigger
+
       track.push line
-
       if line =~ /^\s+INDEX\s.*/
         @tracks.push track
         track = []
       end
     end
 
+  end
+
+  private
+
+  def get_headers_lines
+    headers_arr_lines = []
+    @file.each_line do |line|
+      headers_arr_lines.push line
+      break if line =~ /^FILE\s.*/i
+    end
+    headers_arr_lines
   end
 
   # FIXME if duration new track > duration prev track
@@ -83,7 +98,7 @@ class CueBook
 
     if index > @tracks.size && !@tracks.size.zero?
       raise_duration_cue(index)
-      duration = @duration_cue
+      duration = @duration
     elsif @tracks.size.zero?
       # nothing actions
     # if index < @tracks.size && @tracks.size > 0
@@ -100,7 +115,7 @@ class CueBook
   end
 
   def raise_duration_cue(index)
-    if @duration_cue.nil?
+    if @duration.nil?
       raise "Duration_cue must be int!" +
             "\nReason: Index new chapter > Total Tracks count: #{index} > #{@tracks.size}"
     end
