@@ -10,16 +10,16 @@ class CueTime
     validate
   end
 
-  # FIXME минуты нужно печатать всегда воврос в кол-ве знаков
   def to_str(full = false)
-    if @minutes == 0 && !full
-      sprintf('%02d:%02d:%02d', @minutes, @seconds, @frames )
-    elsif @minutes < 100
-      sprintf('%02d:%02d:%02d', @minutes, @seconds, @frames )
-    else
-      sprintf('%d:%02d:%02d', @minutes, @seconds, @frames )
-    end
+    template = if @minutes > 99 || full
+                 '%d:%02d:%02d'
+               else
+                 '%02d:%02d:%02d'
+               end
+    sprintf(template, @minutes, @seconds, @frames )
   end
+
+  alias to_s to_str
 
   # можно реализовать по другому приводить время к общему кол-ву фреймов
   # вычитать складывать и потом форматировать результат в '%02d:%02d:%02d'

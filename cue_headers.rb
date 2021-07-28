@@ -3,7 +3,7 @@ class CueHeaders
   HEADERS_FAMOUS_REM = %w( genre date comment composer )
   HEADERS_FAMOUS = %w( performer title file ) + HEADERS_FAMOUS_REM
 
-  def header_template(type)
+  def header_template(type = :SIMPLE)
     {data: nil, type: type}.dup
   end
 

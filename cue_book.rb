@@ -13,25 +13,39 @@ require_relative 'cue_headers'
 #
 class CueBook
   UTF_BOM = "\xEF\xBB\xBF"
-  attr_reader :headers, :tracks
+  attr_reader :headers, :tracks, :save_path, :duration
 
-  def initialize(path: nil, duration: nil)
-    @path = path
-    @duration = duration
-    @file = nil
+  def initialize(save_path: nil, duration: nil)
+    @save_path = set_save_path(save_path)
+    @duration = duration ? CueTime.new(duration) : duration
     @headers = CueHeaders.new
     @tracks = []
+    @file = nil
   end
 
-  def self.new(path: nil, duration: nil)
-    object = allocate
-    object.send(:initialize, path: path, duration: duration)
-    object
+  # FIXME нужно доработать CueTime, добавить операции сравнения
+  def duration=(time_str)
+    # duration = CueTime.new(time_str)
+    #
+    # @aka raise_duration_new_chap
+    # if @tracks.nonzero? && duration <= @tracks.last.index
+    #   raise "Total duration must be > start index last track!"
+    # end
+    # @duration = duration
+    @duration = CueTime.new(time_str)
+  end
+
+  def set_save_path(save_path)
+    if save_path && Dir.exist?(save_path)
+      save_path
+    else
+      File.expand_path(File.dirname(__FILE__))
+    end
   end
 
   def self.parse_from_file(path)
     object = allocate
-    object.send(:initialize, path: path)
+    object.send(:initialize, save_path: File.dirname(path))
 
     object.load_cue(path)
     object.set_headers
@@ -52,6 +66,7 @@ class CueBook
     @tracks.map! do |track|
       cue_track = CueTrack.new
       cue_track.parse_track(track)
+      cue_track.index = CueTime.new(cue_track.index)
       cue_track
     end
   end
