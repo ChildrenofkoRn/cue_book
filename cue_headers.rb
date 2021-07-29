@@ -13,15 +13,15 @@ class CueHeaders
 
       instance_variable_set "@#{header}".to_sym, header_template(type)
 
-      self.class.define_method(header.to_sym) do
+      self.class.send(:define_method, header.to_sym) do
         instance_variable_get("@#{header}".to_sym)[:data]
       end
 
-      self.class.define_method("#{header}_type".to_sym) do
+      self.class.send(:define_method, "#{header}_type".to_sym) do
         instance_variable_get("@#{header}".to_sym)[:type]
       end
 
-      self.class.define_method("#{header}=".to_sym) do |data|
+      self.class.send(:define_method, "#{header}=".to_sym) do |data|
         instance_variable_get("@#{header}".to_sym)[:data] = data
       end
     end
