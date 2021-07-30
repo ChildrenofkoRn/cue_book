@@ -10,6 +10,7 @@ class CueTrack
     @index  = index
     @title  = title
     @author = author
+    @number = number
   end
 
   def parse_track(track_array_lines)

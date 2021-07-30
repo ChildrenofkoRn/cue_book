@@ -23,16 +23,14 @@ class CueBook
     @file = nil
   end
 
-  # FIXME нужно доработать CueTime, добавить операции сравнения
   def duration=(time_str)
-    # duration = CueTime.new(time_str)
-    #
-    # @aka raise_duration_new_chap
-    # if @tracks.nonzero? && duration <= @tracks.last.index
-    #   raise "Total duration must be > start index last track!"
-    # end
-    # @duration = duration
-    @duration = CueTime.new(time_str)
+    duration = CueTime.new(time_str)
+
+    if @tracks.size.nonzero? && duration <= @tracks.last.index
+      raise "Total duration must be > start index last track!" +
+            "\nIndex last track = #{@tracks.last.index}"
+    end
+    @duration = duration
   end
 
   def set_save_path(save_path)
@@ -51,6 +49,7 @@ class CueBook
     object.set_headers
     object.split_tracks
     object.parse_track
+    object.instance_variable_set :@file, nil
     object
   end
 
@@ -72,10 +71,7 @@ class CueBook
   end
 
   def set_headers
-    headers_lines = get_headers_lines
-    # DUP тк в CueHeaders мы его стираем по ходу парсинга
-    # иначе не ворк next if index <= @headers_raw.size в split_tracks
-    @headers = CueHeaders.parse_headers(headers_lines.dup)
+    @headers = CueHeaders.parse_headers(get_headers_lines)
   end
 
   def split_tracks
@@ -92,10 +88,45 @@ class CueBook
         track = []
       end
     end
+  end
 
+  # FIXME выбрасывать исключения до изменения индексов в существующих треках
+  # TODO REFACTOR
+  def add_chapter(number:, duration:, title:, author: nil)
+    duration_new_chapter = CueTime.new(duration)
+    new_index = CueTime.new
+
+    if number > @tracks.size && @tracks.size.nonzero?
+      raise_duration_cue(number)
+      new_index = new_index + @duration
+      @duration = @duration + duration_new_chapter
+      number = @tracks.size + 1
+    elsif @tracks.size.zero?
+      @duration = duration_new_chapter
+    elsif @tracks.size.nonzero? && number == 1
+      tracks_next = @tracks[number - 1]
+      tracks_next.index = tracks_next.index + duration_new_chapter
+      raise_duration_chapter(@tracks[1].index, tracks_next.index)
+    # if index < @tracks.size && @tracks.size > 0
+    else
+      tracks_next = @tracks[number - 1]
+      new_index = (new_index + tracks_next.index) - duration_new_chapter
+      raise_duration_chapter(new_index, @tracks[number - 2].index)
+    end
+
+    renumber_tracks(number) if number <= @tracks.size
+    track_new = CueTrack.new(number: number, title: title, author: author, index: new_index)
+    @tracks.insert(number - 1, track_new)
   end
 
   private
+
+  def renumber_tracks(start_number)
+    @tracks.each do |track|
+      next if track.number < start_number
+      track.number += 1
+    end
+  end
 
   def get_headers_lines
     headers_arr_lines = []
@@ -106,44 +137,19 @@ class CueBook
     headers_arr_lines
   end
 
-  # FIXME if duration new track > duration prev track
-  # если добавляем нвоый трек в пустой cue?
-  def add_chapter(index:, duration:, title:, author: nil)
-    duration = CueTime.new(duration)
-
-    if index > @tracks.size && !@tracks.size.zero?
-      raise_duration_cue(index)
-      duration = @duration
-    elsif @tracks.size.zero?
-      # nothing actions
-    # if index < @tracks.size && @tracks.size > 0
-    else
-      # raise_duration_new_chap(index_new, index_prev)
-      tracks_prev = @tracks[index - 1]
-      tracks_prev_index = tracks_prev.index
-      tracks_prev.index = CueTime.new(tracks_prev_index.dup) + duration
-      duration = tracks_prev_index
-    end
-
-    track_new = CueTrack.new(number: index, title: title, author: author, index: duration)
-    @tracks.insert(index - 1, track_new)
-  end
-
-  def raise_duration_cue(index)
+  def raise_duration_cue(number)
     if @duration.nil?
-      raise "Duration_cue must be int!" +
-            "\nReason: Index new chapter > Total Tracks count: #{index} > #{@tracks.size}"
+      raise "Total Duration CUE must be set!" +
+            "\nReason: Number new chapter > Total Tracks count: #{number} > #{@tracks.size}"
     end
   end
 
-  def raise_duration_new_chap(index_new, index_prev)
-    #TODO to realize
-    if index_new >= index_prev
-      raise "Duration new chapter too big!" +
-            "\nReason: Index new chapter > Index prev chapter: #{index_new} > #{index_prev}"
+  def raise_duration_chapter(index_next, index_prev)
+    if index_next <= index_prev
+      raise "Duration chapter too big!" +
+            "\nReason: Index next chapter <= Index prev chapter: #{index_next} <= #{index_prev}"
     end
   end
-
 
   def add_track(index, track)
     # @tracks.insert(index, track)
