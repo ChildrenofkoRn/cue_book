@@ -4,7 +4,8 @@ class CueTime
   MAX_MINUTES = 999
   MAX_SECONDS = 59
   MAX_FRAMES = 74
-  MAX_TOTAL_FRAMES = MAX_MINUTES * (MAX_SECONDS + 1) * (MAX_FRAMES + 1) + MAX_SECONDS * (MAX_FRAMES + 1)  + (MAX_FRAMES)
+  MAX_TOTAL_FRAMES = MAX_MINUTES * (MAX_SECONDS + 1) * (MAX_FRAMES + 1) +
+                      MAX_SECONDS * (MAX_FRAMES + 1)  + (MAX_FRAMES)
 
   def initialize(time_str = nil)
     @frames = time_str.nil? ? 0 : parse_time(time_str)
@@ -13,7 +14,7 @@ class CueTime
 
   def self.to_str(full: false, frames:)
     frames_sign = frames < 0 ? '-' : ''
-    time_arr = split_time(frames.abs)
+    time_arr = split_time(frames)
     template = if time_arr.first > 99 || full
                  '%s%d:%02d:%02d'
                else
@@ -61,8 +62,9 @@ class CueTime
 
   private
 
+  # calculates and returns only positive numbers
   def self.split_time(frames)
-    seconds, frames = frames.divmod(MAX_FRAMES + 1)
+    seconds, frames = frames.abs.divmod(MAX_FRAMES + 1)
     minutes, seconds = seconds.divmod(MAX_SECONDS + 1)
     [minutes, seconds, frames]
   end

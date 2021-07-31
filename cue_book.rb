@@ -3,13 +3,8 @@ require_relative 'cue_track'
 require_relative 'cue_headers'
 
 # TODO
-# 1. Наверно стоит сделать индексы в треках сразу инстансами CueTime
-# 2. Непонятно нужно ли нам хранить индексы треков если массив последовательный и легко нумеруется.
-# 3. реализовать сравнение инстансов CueTime
-#
-# * Со временем реализовать добавление треков, те возможность увеличивать продолжительность CUE
-# * Генерация нового CUE с 0
-# * Подумать как иницилизировать объект, те создавать пустым или сразу скармливать файл или хеш?
+# Похоже стоит создать класс Playlist, который и будет заниматься треками
+# пока что где треки где главы => выбрать одно - главы
 #
 class CueBook
   UTF_BOM = "\xEF\xBB\xBF"
@@ -90,23 +85,28 @@ class CueBook
     end
   end
 
-  # FIXME выбрасывать исключения до изменения индексов в существующих треках
-  # TODO REFACTOR
+  # REFACTOR
   def add_chapter(number:, duration:, title:, author: nil)
     duration_new_chapter = CueTime.new(duration)
     new_index = CueTime.new
+    number = number.abs
 
+    # If the chapter is added to the end after the existing tracks
     if number > @tracks.size && @tracks.size.nonzero?
-      raise_duration_cue(number)
-      new_index = new_index + @duration
-      @duration = @duration + duration_new_chapter
-      number = @tracks.size + 1
+      new_index, number = *helper_adding_last_track(number, duration_new_chapter)
+
+    # If a chapter is added to an empty CUE, those will be the first chapter
     elsif @tracks.size.zero?
       @duration = duration_new_chapter
+
+    # If a chapter is added to the beginning of a CUE, that already contains chapters
     elsif @tracks.size.nonzero? && number == 1
       tracks_next = @tracks[number - 1]
-      tracks_next.index = tracks_next.index + duration_new_chapter
-      raise_duration_chapter(@tracks[1].index, tracks_next.index)
+      tracks_next_index = tracks_next.index.dup + duration_new_chapter
+      raise_duration_chapter(@tracks[1].index, tracks_next_index)
+      tracks_next.index = tracks_next_index
+
+    # If a chapter is added between chapters
     # if index < @tracks.size && @tracks.size > 0
     else
       tracks_next = @tracks[number - 1]
@@ -119,7 +119,62 @@ class CueBook
     @tracks.insert(number - 1, track_new)
   end
 
+  def insert_chapter(number:, duration:, title:, author: nil)
+    duration_new_chapter = CueTime.new(duration)
+    new_index = CueTime.new
+    number = number.abs
+
+    # If the chapter is added to the end after the existing tracks
+    if number > @tracks.size && @tracks.size.nonzero?
+      new_index, number = *helper_adding_last_track(number, duration_new_chapter)
+
+    # If a chapter is added to an empty CUE, those will be the first chapter
+    elsif @tracks.size.zero?
+      @duration = duration_new_chapter
+
+    # If a chapter is added to the beginning of a CUE, that already contains chapters
+    elsif @tracks.size.nonzero? && number == 1
+      @duration = @duration + duration_new_chapter unless @duration.nil?
+
+    # If a chapter is added between chapters
+    # if index < @tracks.size && @tracks.size > 0
+    else
+      tracks_next = @tracks[number - 1]
+      new_index = new_index + tracks_next.index
+      @duration = @duration + duration_new_chapter unless @duration.nil?
+    end
+
+    reindex_tracks(number, duration_new_chapter) if number <= @tracks.size
+    renumber_tracks(number) if number <= @tracks.size
+    track_new = CueTrack.new(number: number, title: title, author: author, index: new_index)
+    @tracks.insert(number - 1, track_new)
+  end
+
   private
+
+  def helper_adding_last_track(number, duration_new_chapter)
+    raise_duration_cue(number)
+    new_index = CueTime.new + @duration
+    @duration + duration_new_chapter
+    number = @tracks.size + 1
+
+    [new_index, number]
+  end
+
+  def delete_chapter_info
+
+  end
+
+  def erase_chapter
+
+  end
+
+  def reindex_tracks(start_number, added_duration)
+    @tracks.each do |track|
+      next if track.number < start_number
+      track.index + added_duration
+    end
+  end
 
   def renumber_tracks(start_number)
     @tracks.each do |track|
@@ -140,7 +195,10 @@ class CueBook
   def raise_duration_cue(number)
     if @duration.nil?
       raise "Total Duration CUE must be set!" +
-            "\nReason: Number new chapter > Total Tracks count: #{number} > #{@tracks.size}"
+            "\nReason: Number new chapter > Total chapters count: #{number} > #{@tracks.size}" +
+            "\nUnfortunately, CUE does not store the full duration." +
+            "\nFor this operation, it must be set e.g: cue.duration = '111:01:10'" +
+            "\n\t* And it should also be greater than the index of the last track."
     end
   end
 
@@ -149,10 +207,10 @@ class CueBook
       raise "Duration chapter too big!" +
             "\nReason: Index next chapter <= Index prev chapter: #{index_next} <= #{index_prev}"
     end
-  end
-
-  def add_track(index, track)
-    # @tracks.insert(index, track)
+    if (index_next.frames - index_prev.frames) <= 75 * 5
+      p 'Attention! You will get a chapter duration less than 5 seconds!'
+      p 'Maybe you are doing something wrong.'
+    end
   end
 end
 
