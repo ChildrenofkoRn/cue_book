@@ -1,15 +1,15 @@
 class CueTrack
-  DIRECTIVES_ALLOW = %w( number index title author ).freeze
+  DIRECTIVES_ALLOW = %w( number index title performer composer).freeze
 
   attr_accessor *DIRECTIVES_ALLOW.map(&:to_sym)
 
   # ISRC USEE10240418
   # FLAGS DCP
 
-  def initialize(index: nil, title: nil, author: nil,  number: nil)
+  def initialize(index: nil, title: nil, performer: nil,  number: nil, composer: nil)
     @index  = index
     @title  = title
-    @author = author
+    @performer = performer
     @number = number
   end
 
@@ -65,10 +65,21 @@ class CueTrack
     title
   end
 
-  def self.get_author(arr_lines)
+  def self.get_performer(arr_lines)
     author = nil
     arr_lines.each do |line|
       if line =~ /^\s+PERFORMER\s.*/i
+        author = line[/(?:")(.*)(?:")/,1]
+        break
+      end
+    end
+    author
+  end
+
+  def self.get_composer(arr_lines)
+    author = nil
+    arr_lines.each do |line|
+      if line =~ /^\s+COMPOSER\s.*/i
         author = line[/(?:")(.*)(?:")/,1]
         break
       end

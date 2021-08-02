@@ -1,9 +1,9 @@
 class CueHeaders
 
   HEADERS_FAMOUS_REM = %w( genre date comment composer )
-  HEADERS_FAMOUS = %w( performer title file ) + HEADERS_FAMOUS_REM
+  HEADERS_FAMOUS = HEADERS_FAMOUS_REM + %w( performer title file )
 
-  def header_template(type = :SIMPLE)
+    def header_template(type = :SIMPLE)
     {data: nil, type: type}.dup
   end
 
@@ -113,22 +113,4 @@ class CueHeaders
       end
     end
   end
-
-  def render
-    headers = []
-    HEADERS_FAMOUS.each do |header|
-
-      data = instance_variable_get("@#{header}".to_sym)[:data]
-      type = instance_variable_get("@#{header}".to_sym)[:type]
-
-      line = if type == :REM
-               'REM %s "%s"' % [header.upcase, data]
-             else
-               '%s "%s"' % [header.upcase, data]
-             end
-      headers.push line
-    end
-    headers.join("\n")
-  end
-
 end

@@ -26,7 +26,7 @@ class CueTracklist
   end
 
   # REFACTOR
-  def add_chapter(number:, duration:, title:, author: nil)
+  def add_chapter(number:, duration:, title:, performer: nil, composer: nil)
     duration_new_chapter = CueTime.new(duration)
     new_index = CueTime.new
     number = number.abs
@@ -59,12 +59,12 @@ class CueTracklist
     end
 
     renumber_tracks(number) if number <= @tracks.size
-    track_new = CueTrack.new(number: number, title: title, author: author, index: new_index)
+    track_new = CueTrack.new(number: number, title: title, performer: performer, composer: composer, index: new_index)
     @tracks.insert(number - 1, track_new)
   end
 
 
-  def insert_chapter(number:, duration:, title:, author: nil)
+  def insert_chapter(number:, duration:, title:, performer: nil, composer: nil)
     duration_new_chapter = CueTime.new(duration)
     new_index = CueTime.new
     number = number.abs
@@ -95,11 +95,14 @@ class CueTracklist
 
     reindex_tracks(number, duration_new_chapter) if number <= @tracks.size
     renumber_tracks(number) if number <= @tracks.size
-    track_new = CueTrack.new(number: number, title: title, author: author, index: new_index)
+    track_new = CueTrack.new(number: number, title: title, performer: performer, composer: composer, index: new_index)
     @tracks.insert(number - 1, track_new)
   end
 
   private
+
+  def change_chapter_start_index
+  end
 
   def delete_chapter_info
 

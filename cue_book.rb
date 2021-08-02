@@ -2,6 +2,7 @@ require_relative 'cue_time'
 require_relative 'cue_track'
 require_relative 'cue_headers'
 require_relative 'cue_tracklist'
+require_relative 'cue_render'
 
 # TODO
 # Похоже стоит создать класс Playlist, который и будет заниматься треками
@@ -9,13 +10,46 @@ require_relative 'cue_tracklist'
 #
 class CueBook
   UTF_BOM = "\xEF\xBB\xBF"
-  attr_reader :headers, :tracks, :save_path, :duration
+  attr_reader :headers, :save_path, :tracklist
 
   def initialize(save_path: nil, duration: nil)
     @save_path = set_save_path(save_path)
-    @headers = CueHeaders.new
+    @headers   = CueHeaders.new
     @tracklist = CueTracklist.new(duration)
-    @file = nil
+  end
+
+  def self.parse_from_file(path)
+    object = allocate
+    object.send(:initialize, save_path: File.dirname(path))
+    object.instance_variable_set(:@file, nil)
+
+    object.send(:load_cue, path)
+    object.send(:set_headers)
+    object.send(:parse_track)
+    object.remove_instance_variable(:@file)
+    object
+  end
+
+  def duration
+    @tracklist.duration
+  end
+
+  def duration=(time_str)
+    @tracklist.duration = (time_str)
+  end
+
+  def render
+    CueRender.new(headers: @headers, tracks: @tracklist.tracks).render
+  end
+
+  private
+
+  def load_cue(path)
+    @file = IO.read(path, :encoding => 'UTF-8')
+    @file.delete! UTF_BOM if @file.include? UTF_BOM
+  rescue Errno::ENOENT
+    p "Error. File not found: #{path}"
+    exit
   end
 
   def set_save_path(save_path)
@@ -26,26 +60,13 @@ class CueBook
     end
   end
 
-  def self.parse_from_file(path)
-    object = allocate
-    object.send(:initialize, save_path: File.dirname(path))
-
-    object.load_cue(path)
-    object.set_headers
-    object.parse_track(object.split_tracks)
-    object.instance_variable_set :@file, nil
-    object
+  def set_headers
+    @headers = CueHeaders.parse_headers(get_headers_lines)
   end
 
-  def load_cue(path)
-    @file = IO.read(path, :encoding => 'UTF-8')
-    @file.delete! UTF_BOM if @file.include? UTF_BOM
-  rescue Errno::ENOENT
-    p "Error. File not found: #{path}"
-    exit
-  end
+  def parse_track
+    tracks = split_tracks
 
-  def parse_track(tracks)
     tracks.map! do |track|
       cue_track = CueTrack.new
       cue_track.parse_track(track)
@@ -53,10 +74,6 @@ class CueBook
       cue_track
     end
     @tracklist.load_tracks(tracks)
-  end
-
-  def set_headers
-    @headers = CueHeaders.parse_headers(get_headers_lines)
   end
 
   def split_tracks
@@ -76,8 +93,6 @@ class CueBook
     end
     tracks
   end
-
-  private
 
   def get_headers_lines
     headers_arr_lines = []
