@@ -3,8 +3,8 @@ class CueHeaders
   HEADERS_FAMOUS_REM = %w( genre date comment composer )
   HEADERS_FAMOUS = HEADERS_FAMOUS_REM + %w( performer title file )
 
-    def header_template(type = :SIMPLE)
-    {data: nil, type: type}.dup
+  def header_template(type = :SIMPLE)
+    {value: nil, type: type}.dup
   end
 
   def initialize
@@ -14,7 +14,7 @@ class CueHeaders
       instance_variable_set "@#{header}".to_sym, header_template(type)
 
       self.class.send(:define_method, header.to_sym) do
-        instance_variable_get("@#{header}".to_sym)[:data]
+        instance_variable_get("@#{header}".to_sym)[:value]
       end
 
       self.class.send(:define_method, "#{header}_type".to_sym) do
@@ -22,7 +22,7 @@ class CueHeaders
       end
 
       self.class.send(:define_method, "#{header}=".to_sym) do |data|
-        instance_variable_get("@#{header}".to_sym)[:data] = data
+        instance_variable_get("@#{header}".to_sym)[:value] = data
       end
     end
   end
@@ -46,7 +46,7 @@ class CueHeaders
   def parse_title
     @headers_arr.each do |line|
       if line =~ /^\s*TITLE\s.*/i
-        @title[:data] = line[/(?:")(.*)(?:")/,1]
+        @title[:value] = line[/(?:")(.*)(?:")/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -56,7 +56,7 @@ class CueHeaders
   def parse_performer
     @headers_arr.each do |line|
       if line =~ /^\s*PERFORMER\s.*/i
-        @performer[:data] = line[/(?:")(.*)(?:")/,1]
+        @performer[:value] = line[/(?:")(.*)(?:")/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -66,7 +66,7 @@ class CueHeaders
   def parse_genre
     @headers_arr.each do |line|
       if line =~ /^REM\s+GENRE\s.*/i
-        @genre[:data] = line[/(?:REM\s+GENRE\s+"?)(.*)(?:"?)/,1]
+        @genre[:value] = line[/(?:REM\s+GENRE\s+"?)(.*)(?:"?)/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -76,7 +76,7 @@ class CueHeaders
   def parse_date
     @headers_arr.each do |line|
       if line =~ /^REM\s+DATE\s.*/i
-        @date[:data] = line[/(?:REM\s+DATE\s+"?)(.*)(?:"?)/,1]
+        @date[:value] = line[/(?:REM\s+DATE\s+"?)(.*)(?:"?)/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -87,7 +87,7 @@ class CueHeaders
   def parse_comment
     @headers_arr.each do |line|
       if line =~ /^REM\s+COMMENT\s.*/i
-        @comment[:data] = line[/(?:REM\s+COMMENT\s+")(.*)(?:")/,1]
+        @comment[:value] = line[/(?:REM\s+COMMENT\s+")(.*)(?:")/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -97,7 +97,7 @@ class CueHeaders
   def parse_composer
     @headers_arr.each do |line|
       if line =~ /^REM\s+COMPOSER\s.*/i
-        @composer[:data] = line[/(?:REM\s+COMPOSER\s+")(.*)(?:")/,1]
+        @composer[:value] = line[/(?:REM\s+COMPOSER\s+")(.*)(?:")/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -107,7 +107,7 @@ class CueHeaders
   def parse_file
     @headers_arr.each do |line|
       if line =~ /^\s*FILE\s.*/i
-        @file[:data] = line[/(?:")(.*)(?:")/,1]
+        @file[:value] = line[/(?:")(.*)(?:")/, 1]
         @headers_arr.delete(line)
         break
       end

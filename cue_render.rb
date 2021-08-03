@@ -21,15 +21,16 @@ class CueRender
     headers_arr = []
     @headers.class::HEADERS_FAMOUS.each do |header|
 
-      data = @headers.instance_variable_get("@#{header}".to_sym)[:data]
-      type = @headers.instance_variable_get("@#{header}".to_sym)[:type]
+      value = @headers.public_send(header.to_sym)
+      type = @headers.public_send("#{header}_type".to_sym)
 
       line = if type == :REM
-               'REM %s "%s"' % [header.upcase, data]
+               'REM %s "%s"' % [header.upcase, value]
              else
-               '%s "%s"' % [header.upcase, data]
+               '%s "%s"' % [header.upcase, value]
              end
       line += " WAVE" if header == 'file'
+      line = set_announcer_for_title(line) if header == 'title'
       headers_arr.push line
     end
     headers_arr
@@ -73,5 +74,11 @@ class CueRender
   def get_index(index)
     spaces = "\s" * 4
     sprintf('%sINDEX 01 %s', spaces, index)
+  end
+
+  def set_announcer_for_title(line)
+    return line if line.include?("[читает ")
+    announcer = @headers.composer ? " [читает #{@headers.composer}]" : ""
+    line.sub(/"$/, announcer + "\"")
   end
 end

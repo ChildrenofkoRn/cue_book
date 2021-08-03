@@ -3,6 +3,7 @@ require_relative 'cue_track'
 require_relative 'cue_headers'
 require_relative 'cue_tracklist'
 require_relative 'cue_render'
+require_relative 'cue_to_file'
 
 # TODO
 # Похоже стоит создать класс Playlist, который и будет заниматься треками

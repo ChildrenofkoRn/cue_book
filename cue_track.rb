@@ -10,6 +10,7 @@ class CueTrack
     @index  = index
     @title  = title
     @performer = performer
+    @composer = composer
     @number = number
   end
 
@@ -22,13 +23,6 @@ class CueTrack
     if track_array_lines.size > DIRECTIVES_ALLOW.size
       p "Attention! Some lines were left unprocessed!"
       pp track_array_lines
-    end
-  end
-
-  def render
-    track = []
-    DIRECTIVES_ALLOW.each do |directive|
-      track.push '\s\s'
     end
   end
 
