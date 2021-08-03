@@ -18,11 +18,9 @@ class CueRender
   end
 
   def get_headers
-    headers_arr = []
-    @headers.class::HEADERS_FAMOUS.each do |header|
-
-      value = @headers.public_send(header.to_sym)
-      type = @headers.public_send("#{header}_type".to_sym)
+    @headers.get.each_with_object([]) do |(header, data), memo|
+      value = data[:value]
+      type  = data[:type]
 
       line = if type == :REM
                'REM %s "%s"' % [header.upcase, value]
@@ -30,24 +28,18 @@ class CueRender
                '%s "%s"' % [header.upcase, value]
              end
       line += " WAVE" if header == 'file'
-      line = set_announcer_for_title(line) if header == 'title'
-      headers_arr.push line
+      memo.push line
     end
-    headers_arr
   end
 
   def track_format(track)
-    track_lines = []
-
-    track_lines.push get_number_track(track.number)
-    track_lines.push get_title(track.title)
-    track_lines.push get_performer(track.performer)
-    track_lines.push get_composer(track.composer)
-    track_lines.push get_index(track.index)
-    track_lines
+    track.class::DIRECTIVES_ALLOW.each_with_object([]) do |directive, memo|
+      value = track.public_send(directive.to_sym)
+      memo.push self.send("get_#{directive}".to_sym, value)
+    end
   end
 
-  def get_number_track(number)
+  def get_number(number)
     spaces = "\s" * 2
     sprintf('%sTRACK %02d AUDIO', spaces, number)
   end
@@ -74,11 +66,5 @@ class CueRender
   def get_index(index)
     spaces = "\s" * 4
     sprintf('%sINDEX 01 %s', spaces, index)
-  end
-
-  def set_announcer_for_title(line)
-    return line if line.include?("[читает ")
-    announcer = @headers.composer ? " [читает #{@headers.composer}]" : ""
-    line.sub(/"$/, announcer + "\"")
   end
 end

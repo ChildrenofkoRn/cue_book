@@ -40,6 +40,7 @@ class CueBook
   end
 
   def render
+    @headers.set_announcer_for_title
     CueRender.new(headers: @headers, tracks: @tracklist.tracks).render
   end
 

@@ -1,5 +1,5 @@
 class CueTrack
-  DIRECTIVES_ALLOW = %w( number index title performer composer).freeze
+  DIRECTIVES_ALLOW = %w( number title performer composer index ).freeze
 
   attr_accessor *DIRECTIVES_ALLOW.map(&:to_sym)
 
