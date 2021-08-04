@@ -59,7 +59,11 @@ class CueTracklist
     end
 
     renumber_tracks(number) if number <= @tracks.size
-    track_new = CueTrack.new(number: number, title: title, performer: performer, composer: composer, index: new_index)
+    track_new = CueTrack.new(number: number,
+                             title: title,
+                             performer: performer,
+                             composer: composer,
+                             index: new_index)
     @tracks.insert(number - 1, track_new)
   end
 
@@ -95,7 +99,11 @@ class CueTracklist
 
     reindex_tracks(number, duration_new_chapter) if number <= @tracks.size
     renumber_tracks(number) if number <= @tracks.size
-    track_new = CueTrack.new(number: number, title: title, performer: performer, composer: composer, index: new_index)
+    track_new = CueTrack.new(number: number,
+                             title: title,
+                             performer: performer,
+                             composer: composer,
+                             index: new_index)
     @tracks.insert(number - 1, track_new)
   end
 

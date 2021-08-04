@@ -3,14 +3,12 @@ require_relative 'cue_track'
 require_relative 'cue_headers'
 require_relative 'cue_tracklist'
 require_relative 'cue_render'
-require_relative 'cue_to_file'
+require_relative 'cue_file'
 
 # TODO
-# Похоже стоит создать класс Playlist, который и будет заниматься треками
-# пока что где треки где главы => выбрать одно - главы
+#
 #
 class CueBook
-  UTF_BOM = "\xEF\xBB\xBF"
   attr_reader :headers, :save_path, :tracklist
 
   def initialize(save_path: nil, duration: nil)
@@ -22,9 +20,9 @@ class CueBook
   def self.parse_from_file(path)
     object = allocate
     object.send(:initialize, save_path: File.dirname(path))
-    object.instance_variable_set(:@file, nil)
 
-    object.send(:load_cue, path)
+    file = CueFile.load_cue(path)
+    object.instance_variable_set(:@file, file)
     object.send(:set_headers)
     object.send(:parse_track)
     object.remove_instance_variable(:@file)
@@ -44,15 +42,12 @@ class CueBook
     CueRender.new(headers: @headers, tracks: @tracklist.tracks).render
   end
 
-  private
-
-  def load_cue(path)
-    @file = IO.read(path, :encoding => 'UTF-8')
-    @file.delete! UTF_BOM if @file.include? UTF_BOM
-  rescue Errno::ENOENT
-    p "Error. File not found: #{path}"
-    exit
+  def save
+    file = CueFile.new(headers: @headers, path2save: @save_path, cue_string: self.render)
+    file.save
   end
+
+  private
 
   def set_save_path(save_path)
     if save_path && Dir.exist?(save_path)

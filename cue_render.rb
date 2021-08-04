@@ -27,7 +27,7 @@ class CueRender
              else
                '%s "%s"' % [header.upcase, value]
              end
-      line += " WAVE" if header == 'file'
+      line += " WAVE" if header == :file
       memo.push line
     end
   end
@@ -60,7 +60,7 @@ class CueRender
     composer = composer.nil? ? @headers.composer : composer
 
     spaces = "\s" * 4
-    sprintf('%sPERFORMER "%s"', spaces, composer)
+    sprintf('%sREM COMPOSER "%s"', spaces, composer)
   end
 
   def get_index(index)
