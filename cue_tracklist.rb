@@ -107,6 +107,86 @@ class CueTracklist
     @tracks.insert(number - 1, track_new)
   end
 
+  def move_back_start_chapter(number, time_shift)
+    raise CueErrorRange if first?(number)
+
+    time_shift = CueTime.new(time_shift)
+    track = get_track(number)
+    raise CueError404 if track.nil?
+
+    prev_index = get_prev_track(number)&.index
+    new_index = CueTime.new + track.index - time_shift
+    raise_duration_chapter(new_index, prev_index)
+    track.index = new_index
+
+  rescue CueError404
+    track_404_msg
+    false
+  rescue CueErrorRange
+    p "This operation is not possible."
+    p "Because this track is the first."
+    false
+  rescue CueErrorDuration => ex
+    puts "#{ex.class}: #{ex.message}"
+    false
+  end
+
+  def move_forward_start_chapter(number, time_shift)
+    raise CueErrorRange if first?(number)
+
+    time_shift = CueTime.new(time_shift)
+    track = get_track(number)
+    raise CueError404 if track.nil?
+
+    next_index = get_next_track(number)&.index
+    new_index = CueTime.new + track.index + time_shift
+    unless next_index.nil?
+      raise_duration_chapter(next_index, new_index)
+    end
+    track.index = new_index
+
+  rescue CueError404
+    track_404_msg
+    false
+  rescue CueErrorRange
+    p "This operation is not possible."
+    p "Because this track is the first."
+    false
+  rescue CueErrorDuration => ex
+    puts "#{ex.class}: #{ex.message}"
+    false
+  end
+
+  def track_404_msg
+    "Error. Track not found."
+  end
+
+  def get_track(number)
+    number = number - 1
+    return nil if number < 0 || number > @tracks.size
+    @tracks[number]
+  end
+
+  def get_prev_track(number)
+    number = number - 2
+    return nil if number < 0
+    @tracks[number]
+  end
+
+  def get_next_track(number)
+    return nil if number > @tracks.size
+    @tracks[number]
+  end
+
+  def first?(number)
+    number == 1
+  end
+
+  def last?(number)
+    number == @tracks.size
+  end
+
+
   private
 
   def change_chapter_start_index
@@ -136,7 +216,7 @@ class CueTracklist
 
   def raise_duration_cue(number)
     if @duration.nil?
-      raise "Total Duration CUE must be set!" +
+      raise CueErrorDuration, "Total Duration CUE must be set!" +
               "\nReason: Number new chapter > Total chapters count: #{number} > #{@tracks.size}" +
               "\nUnfortunately, CUE does not store the full duration." +
               "\nFor this operation, it must be set e.g: cue.duration = '111:01:10'" +

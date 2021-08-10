@@ -80,7 +80,7 @@ class CueHeaders
   def parse_genre
     @headers_arr.each do |line|
       if line =~ /^REM\s+GENRE\s.*/i
-        self.genre = line[/(?:REM\s+GENRE\s+"?)(.*)(?:"?)/, 1]
+        self.genre = line[/(?:REM\s+GENRE\s+["']?)([^"']*)(?:["']?)/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -90,7 +90,7 @@ class CueHeaders
   def parse_date
     @headers_arr.each do |line|
       if line =~ /^REM\s+DATE\s.*/i
-        self.date = line[/(?:REM\s+DATE\s+"?)(.*)(?:"?)/, 1]
+        self.date = line[/(?:REM\s+DATE\s+["']?)([^"']*)(?:["']?)/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -101,7 +101,7 @@ class CueHeaders
   def parse_comment
     @headers_arr.each do |line|
       if line =~ /^REM\s+COMMENT\s.*/i
-        self.comment = line[/(?:REM\s+COMMENT\s+")(.*)(?:")/, 1]
+        self.comment = line[/(?:REM\s+COMMENT\s+["']?)([^"']*)(?:["']?)/, 1]
         @headers_arr.delete(line)
         break
       end
@@ -111,7 +111,7 @@ class CueHeaders
   def parse_composer
     @headers_arr.each do |line|
       if line =~ /^REM\s+COMPOSER\s.*/i
-        self.composer = line[/(?:REM\s+COMPOSER\s+")(.*)(?:")/, 1]
+        self.composer = line[/(?:REM\s+COMPOSER\s+["']?)([^"']*)(?:["']?)/, 1]
         @headers_arr.delete(line)
         break
       end

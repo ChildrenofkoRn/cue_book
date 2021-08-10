@@ -4,6 +4,7 @@ require_relative 'cue_headers'
 require_relative 'cue_tracklist'
 require_relative 'cue_render'
 require_relative 'cue_file'
+require_relative 'cue_error'
 
 # TODO
 #
