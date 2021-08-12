@@ -95,7 +95,7 @@ class CueBook
   def get_headers_lines
     headers_arr_lines = []
     @file.each_line do |line|
-      headers_arr_lines.push line
+      headers_arr_lines.push line.chomp
       break if line =~ /^FILE\s.*/i
     end
     headers_arr_lines

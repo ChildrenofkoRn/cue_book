@@ -57,10 +57,14 @@ class CueHeaders
 
   private
 
+  POSTFIX = /([^"']*)(?:["']?)/
+
   def parse_title
+    prefix = /\s*TITLE\s/
     @headers_arr.each do |line|
-      if line =~ /^\s*TITLE\s.*/i
-        self.title = line[/(?:")(.*)(?:")/, 1]
+      if line =~ /^#{prefix}.*/i
+        self.title = line[/(?:#{prefix}+["']?)#{POSTFIX}/, 1]
+                           .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
@@ -68,9 +72,11 @@ class CueHeaders
   end
 
   def parse_performer
+    prefix = /\s*PERFORMER\s/
     @headers_arr.each do |line|
-      if line =~ /^\s*PERFORMER\s.*/i
-        self.performer = line[/(?:")(.*)(?:")/, 1]
+      if line =~ /^#{prefix}.*/i
+        self.performer = line[/(?:#{prefix}+["']?)#{POSTFIX}/, 1]
+                           .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
@@ -78,9 +84,11 @@ class CueHeaders
   end
 
   def parse_genre
+    prefix = /REM\s+GENRE\s/
     @headers_arr.each do |line|
-      if line =~ /^REM\s+GENRE\s.*/i
-        self.genre = line[/(?:REM\s+GENRE\s+["']?)([^"']*)(?:["']?)/, 1]
+      if line =~ /^#{prefix}.*/i
+        self.genre = line[/(?:#{prefix}+["']?)#{POSTFIX}/, 1]
+                       .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
@@ -88,9 +96,11 @@ class CueHeaders
   end
 
   def parse_date
+    prefix = /REM\s+DATE\s/
     @headers_arr.each do |line|
-      if line =~ /^REM\s+DATE\s.*/i
-        self.date = line[/(?:REM\s+DATE\s+["']?)([^"']*)(?:["']?)/, 1]
+      if line =~ /^#{prefix}.*/i
+        self.date = line[/(?:#{prefix}+["']?)#{POSTFIX}/, 1]
+                      .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
@@ -99,9 +109,11 @@ class CueHeaders
   end
 
   def parse_comment
+    prefix = /REM\s+COMMENT\s/
     @headers_arr.each do |line|
-      if line =~ /^REM\s+COMMENT\s.*/i
-        self.comment = line[/(?:REM\s+COMMENT\s+["']?)([^"']*)(?:["']?)/, 1]
+      if line =~ /^#{prefix}.*/i
+        self.comment = line[/(?:#{prefix}+["']?)#{POSTFIX}/, 1]
+                         .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
@@ -109,9 +121,11 @@ class CueHeaders
   end
 
   def parse_composer
+    prefix = /REM\s+COMPOSER\s/
     @headers_arr.each do |line|
-      if line =~ /^REM\s+COMPOSER\s.*/i
-        self.composer = line[/(?:REM\s+COMPOSER\s+["']?)([^"']*)(?:["']?)/, 1]
+      if line =~ /^#{prefix}.*/i
+        self.composer = line[/(?:#{prefix}+["']?)#{POSTFIX}/, 1]
+                          .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
@@ -119,9 +133,12 @@ class CueHeaders
   end
 
   def parse_file
+    prefix = /\s*FILE\s/
     @headers_arr.each do |line|
-      if line =~ /^\s*FILE\s.*/i
-        self.file = line[/(?:")(.*)(?:")/, 1]
+      if line =~ /^#{prefix}.*/i
+        p line
+        self.file = line[/(?:#{prefix}+["']?)#{POSTFIX}\s+WAVE/, 1]
+                      .sub(/["']$/,'')
         @headers_arr.delete(line)
         break
       end
