@@ -1,11 +1,14 @@
 class CueTime
   attr_reader :frames
 
-  MAX_MINUTES = 99 * 60
+  MAX_HOURS_MS = 99
+  MAX_MINUTES_MS = 59
+  MAX_MS = 999
+  #
+  MAX_MINUTES = MAX_HOURS_MS * 60
   MAX_SECONDS = 59
   MAX_FRAMES = 74
-  MAX_TOTAL_FRAMES = MAX_MINUTES * (MAX_SECONDS + 1) * (MAX_FRAMES + 1) +
-                      MAX_SECONDS * (MAX_FRAMES + 1)  + (MAX_FRAMES)
+  MAX_TOTAL_FRAMES = MAX_MINUTES * (MAX_SECONDS + 1) * (MAX_FRAMES + 1)
 
   def initialize(time_str = nil)
     @frames = time_str.nil? ? 0 : parse_time(time_str)
@@ -14,13 +17,13 @@ class CueTime
 
   def self.to_str(mode: false, frames:)
     unless is_number?(frames)
-      raise "Validate frames error #{frames}! Frames can only be a number."
+      raise CueTimeInvalidFormat, "Validate frames error #{frames}! Frames can only be a number."
     end
 
     frames_sign = frames.to_i < 0 ? '-' : ''
     time_arr = split_time(frames.to_i)
     template = if mode == :ms
-                 time_arr = split_time_ms(frames)
+                 time_arr = split_time_ms(frames.to_i)
                  '%s%d:%02d:%02d.%03d'
                elsif time_arr.first > 99 || mode == :full
                  '%s%03d:%02d:%02d'
@@ -82,9 +85,8 @@ class CueTime
   end
 
   def self.split_time_ms(frames)
-    seconds, frames = frames.abs.divmod(MAX_FRAMES + 1)
-    minutes, seconds = seconds.divmod(MAX_SECONDS + 1)
-    hour, minutes = minutes.divmod(60)
+    minutes, seconds, frames = *split_time(frames)
+    hour, minutes = minutes.divmod(MAX_MINUTES_MS + 1)
     ms = frames * (1000 / 75.0)
     [hour, minutes, seconds, ms.round]
   end
@@ -111,13 +113,13 @@ class CueTime
       time_arr = Array.new(3 - time_arr.size, 0) + time_arr
     end
 
-    self.class.validate_str(*time_arr, time_str)
     time_arr.reverse!
-
     frames = 0
     frames += time_arr.delete_at(0)
     frames += time_arr.delete_at(0) * (MAX_FRAMES + 1)
     frames += time_arr.delete_at(0) * (MAX_SECONDS + 1) * (MAX_FRAMES + 1)
+
+    self.class.validate_frames(frames)
   end
 
   def format_ms_to_frames(time_str)
@@ -136,11 +138,13 @@ class CueTime
 
   def self.validate_frames(frames)
     if frames > MAX_TOTAL_FRAMES
-      raise "Error! Exceeded the maximum possible time in the CUE: #{to_str(frames: frames)}" +
-              valid_max_value_message_frames
+      msg = "Error! Exceeded the maximum possible time in the CUE: #{to_str(frames: frames)}"
+      raise CueTimeMaxValue, msg + valid_max_allowed_time_message
     elsif frames < 0
-      raise "Error! You can't get a negative time! #{to_str(frames: frames)}" + valid_max_value_message_frames
+      msg = "Error! You can't get a negative time! #{to_str(frames: frames)}"
+      raise CueTimeNegative, msg + valid_max_value_message_frames
     end
+    frames
   end
 
   def validate_frames
@@ -148,32 +152,28 @@ class CueTime
   end
 
   def self.validate_format_time_str(time_str)
-    format_w_frames = /^([0-9]{1,4}:)?[0-9]{2}:[0-9]{2}$/
-    format_w_ms = /^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{2}\.[0-9]{1,3}$/
+    format_w_frames = /^([0-9]{1,4}:)?[0-5][0-9]:([0-6][0-9]|7[0-4])$/
+    format_w_ms     = /^([0-9]{1,2}:)?[0-5]?[0-9]:[0-5][0-9]\.[0-9]{1,3}/
 
     unless  time_str =~ format_w_frames || time_str =~ format_w_ms
-      raise "Time validation failed \"#{time_str}\"" +
-            validate_max_value_message
+      msg = "Time validation failed \"#{time_str}\""
+      raise CueTimeInvalidFormat, msg + validate_max_values_message
     end
     true
   end
 
-  def self.validate_raise(minutes, seconds, frames, time_invalid)
-    raise "Time validation failed \"#{time_invalid}\": minutes: #{minutes}, seconds: #{seconds}, frames: #{frames}" +
-            validate_max_value_message
-  end
-
-  def self.validate_max_value_message
+  def self.validate_max_values_message
     valid_max_value_message_frames +
     "\nOR" +
-    valid_max_value_message_ms
+    valid_max_value_message_ms +
+    valid_max_allowed_time_message
   end
 
   def self.valid_max_value_message_frames
     times = %w(Minutes Seconds Frames)
     maxs  = [MAX_MINUTES, MAX_SECONDS, MAX_FRAMES]
 
-    head = "\nValid string time format: 111:11:11 or 01:10"
+    head = "\nValid string time format: 111:01:11 or 01:10"
     limits = times.zip(maxs).to_h.map do |key, value|
       format("%s%-10s %s", "\n\t", key, "<= #{value}")
     end.join
@@ -183,7 +183,7 @@ class CueTime
 
   def self.valid_max_value_message_ms
     times = %w(Hours Minutes Seconds Ms)
-    maxs  = [16, 59, MAX_SECONDS, 999]
+    maxs  = [MAX_HOURS_MS, MAX_MINUTES_MS, MAX_SECONDS, MAX_MS]
 
     head = "\nValid time with ms: 10:04:06.000 or 2:59.640"
     limits = times.zip(maxs).to_h.map do |key, value|
@@ -193,24 +193,11 @@ class CueTime
     head + limits
   end
 
-  def self.validate_str(minutes, seconds, frames, time_str)
-    unless minutes_valid?(minutes) && seconds_valid?(seconds) && frames_valid?(frames)
-      validate_raise(minutes, seconds, frames, time_str)
-    end
-    true
+  def self.valid_max_allowed_time_message
+    max_frame_format = CueTime.to_str(frames: MAX_TOTAL_FRAMES)
+    max_ms_format    = CueTime.to_str(mode: :ms, frames: MAX_TOTAL_FRAMES)
+    "\nMax Allowed Time: #{max_frame_format} or #{max_ms_format}"
   end
-
-  def self.frames_valid?(frames)
-    frames <= MAX_FRAMES && frames >= 0
-  end
-
-  def self.seconds_valid?(seconds)
-    seconds <= MAX_SECONDS && seconds >= 0
-  end
-
-  def self.minutes_valid?(minutes)
-    minutes <= MAX_MINUTES && minutes >= 0
-    end
 
   def self.is_number?(n)
     n.to_f.to_s == n.to_s || n.to_i.to_s == n.to_s

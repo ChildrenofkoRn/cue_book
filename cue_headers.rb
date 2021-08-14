@@ -39,7 +39,8 @@ class CueHeaders
 
     arr_parsed = object.instance_variable_get :@headers_arr
     if arr_parsed.size > 0
-      p "Attention! Some lines were left unprocessed!"
+      puts "Attention! Some lines were left unprocessed!"
+      puts arr_parsed
     end
 
     object.remove_instance_variable(:@headers_arr)
@@ -136,7 +137,6 @@ class CueHeaders
     prefix = /\s*FILE\s/
     @headers_arr.each do |line|
       if line =~ /^#{prefix}.*/i
-        p line
         self.file = line[/(?:#{prefix}+["']?)#{POSTFIX}\s+WAVE/, 1]
                       .sub(/["']$/,'')
         @headers_arr.delete(line)
