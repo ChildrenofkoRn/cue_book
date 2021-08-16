@@ -31,7 +31,7 @@ class CueHeaders
 
   def self.parse_headers(headers_arr)
     object = self.new
-    object.instance_variable_set :@headers_arr, headers_arr
+    object.instance_variable_set :@headers_arr, headers_arr.dup
 
     HEADERS_FAMOUS.each do |header|
       object.send("parse_#{header}".to_sym)
@@ -52,13 +52,13 @@ class CueHeaders
   end
 
   def set_announcer_for_title
-    return if self.title.include?("[читает ")
-    self.title = self.composer ? "#{self.title} [читает #{self.composer}]" : ""
+    return if self.title.include?("[читает ") || self.composer.nil?
+    self.title = "#{self.title} [читает #{self.composer}]"
   end
 
   private
 
-  POSTFIX = /([^"']*)(?:["']?)/
+  POSTFIX = /(.*)(?:["']?)/
 
   def parse_title
     prefix = /\s*TITLE\s/
@@ -106,7 +106,6 @@ class CueHeaders
         break
       end
     end
-    date
   end
 
   def parse_comment
@@ -136,7 +135,7 @@ class CueHeaders
   def parse_file
     prefix = /\s*FILE\s/
     @headers_arr.each do |line|
-      if line =~ /^#{prefix}.*/i
+      if line =~ /^#{prefix}.*WAVE/i
         self.file = line[/(?:#{prefix}+["']?)#{POSTFIX}\s+WAVE/, 1]
                       .sub(/["']$/,'')
         @headers_arr.delete(line)
