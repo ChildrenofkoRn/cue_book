@@ -66,8 +66,7 @@ class CueBook
     tracks = split_tracks
 
     tracks.map! do |track|
-      cue_track = CueTrack.new
-      cue_track.parse_track(track)
+      cue_track = CueTrack.parse_track(track)
       cue_track.index = CueTime.new(cue_track.index)
       cue_track
     end

@@ -7,7 +7,7 @@ describe CueHeaders do
   HEADERS = HEADERS_REM + %w( performer title file )
 
 
-  describe "#new" do
+  describe ".new" do
     it "#new create object with headers equal to nil" do
       headers = CueHeaders.new
 
@@ -58,20 +58,22 @@ describe CueHeaders do
 
     it "valid parse text for each header [\"']?TEXT[\"']?" do
       array_text = [
-          '1965',
-          '\'Ф"антасти"ка\'',
-          '\'Sur"veilla"nce\'',
-          '"Ф"антаст\'и"ка"',
-          '"Sur"veill\'a"nce"',
-          'Ф"антаст\'и\'"ка',
-          'Sur"veill\'a\'"nce',
-          '"Sur"vei;ll.\'a:\'(")n\/ce*"',
-          '"Target"',
-          'Alejandro\'s Song',
-          'Jóhann Jóhannsson',
-          '"Лавкрафт - Сомнамбулический поиск неведомого Кадата.wav"',
+        '',
+        '1965',
+        '\'Ф"антасти"ка\'',
+        '\'Sur"veilla"nce\'',
+        '"Ф"антаст\'и"ка"',
+        '"Sur"veill\'a"nce"',
+        'Ф"антаст\'и\'"ка',
+        'Sur"veill\'a\'"nce',
+        '"Sur"vei;ll.\'a:\'(")n\/ce*"',
+        '"Target"',
+        'Alejandro\'s Song',
+        'Jóhann Jóhannsson',
+        '"Лавкрафт - Сомнамбулический поиск неведомого Кадата.wav"',
       ]
       valid_parse = [
+        '',
         '1965',
         'Ф"антасти"ка',
         'Sur"veilla"nce',
@@ -123,14 +125,14 @@ describe CueHeaders do
   describe ".set_announcer_for_title" do
     let(:headers) { CueHeaders.new }
 
-    it "if composer set, then adding to title" do
+    it "if composer is set, then adding to title" do
       headers.title = 'Duna'
       headers.composer = 'Peter Markin'
       expect { headers.set_announcer_for_title }
         .to change { headers.title }.from('Duna').to('Duna [читает Peter Markin]')
     end
 
-    it "if composer not set, then title not change" do
+    it "if composer is not set, then title not change" do
       headers.title = 'Duna'
       expect { headers.set_announcer_for_title }.not_to change { headers.title }
     end

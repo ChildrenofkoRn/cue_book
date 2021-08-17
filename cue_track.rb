@@ -3,6 +3,7 @@ class CueTrack
 
   attr_accessor *DIRECTIVES_ALLOW.map(&:to_sym)
 
+  # TODO to realize
   # ISRC USEE10240418
   # FLAGS DCP
 
@@ -14,23 +15,36 @@ class CueTrack
     @number = number
   end
 
-  def parse_track(track_array_lines)
+  def self.parse_track(track_array_lines)
+    object = self.new
+
     DIRECTIVES_ALLOW.each do |directive|
-      data = self.class.send("get_#{directive}".to_sym, track_array_lines)
-      instance_variable_set("@#{directive}".to_sym, data)
+      data = self.send("get_#{directive}".to_sym, track_array_lines)
+      object.instance_variable_set("@#{directive}".to_sym, data)
     end
 
-    if track_array_lines.size > DIRECTIVES_ALLOW.size
-      p "Attention! Some lines were left unprocessed!"
-      pp track_array_lines
+    #REFACTOR
+    directives = DIRECTIVES_ALLOW.dup
+    directives[0] = 'track'
+    track_array_lines.each do |line|
+      check = directives.any? { |directive| line.include?(directive.upcase) }
+      unless check
+        puts "Attention! Some lines were left unprocessed!"
+        puts track_array_lines
+        break
+      end
     end
+    object
   end
 
+  private
+
   def self.get_number(arr_lines)
+    prefix = /^\s+TRACK\s+/
     index = nil
     arr_lines.each do |line|
-      if line =~ /^\s+TRACK\s.*/i
-        index = line.match(/(?:TRACK\s)([0-9]{2})(?:\sAUDIO)/)[1].to_i
+      if line =~ /#{prefix}.*/i
+        index = line.match(/(?:#{prefix})([0-9]{1,3})(?:\sAUDIO)/)[1].to_i
         break
       end
     end
@@ -38,9 +52,10 @@ class CueTrack
   end
 
   def self.get_index(arr_lines)
+    prefix = /\s+INDEX\s01\s+/
     index = nil
     arr_lines.each do |line|
-      if line =~ /^\s+INDEX\s01\s.*/i
+      if line =~ /^#{prefix}.*/i
         index = line.match(/[0-9]+:[0-9]+:[0-9]+/)[0]
         break
       end
@@ -49,10 +64,11 @@ class CueTrack
   end
 
   def self.get_title(arr_lines)
+    prefix = /\s*TITLE\s+/
     title = nil
     arr_lines.each do |line|
-      if line =~ /^\s+TITLE\s.*/i
-        title = line[/(?:")(.*)(?:")/,1]
+      if line =~ /^#{prefix}.*/i
+        title = line[/(?:#{prefix})(.*)/, 1].gsub(/^['"]|['"]$/,'')
         break
       end
     end
@@ -60,24 +76,26 @@ class CueTrack
   end
 
   def self.get_performer(arr_lines)
-    author = nil
+    prefix = /\s*PERFORMER\s+/
+    performer = nil
     arr_lines.each do |line|
-      if line =~ /^\s+PERFORMER\s.*/i
-        author = line[/(?:")(.*)(?:")/,1]
+      if line =~ /^#{prefix}.*/i
+        performer = line[/(?:#{prefix})(.*)/, 1].gsub(/^['"]|['"]$/,'')
         break
       end
     end
-    author
+    performer
   end
 
   def self.get_composer(arr_lines)
-    author = nil
+    prefix = /\s*REM\s+COMPOSER\s+/
+    composer = nil
     arr_lines.each do |line|
-      if line =~ /^\s+COMPOSER\s.*/i
-        author = line[/(?:")(.*)(?:")/,1]
+      if line =~ /^#{prefix}.*/i
+        composer = line[/(?:#{prefix})(.*)/, 1].gsub(/^['"]|['"]$/,'')
         break
       end
     end
-    author
+    composer
   end
 end
