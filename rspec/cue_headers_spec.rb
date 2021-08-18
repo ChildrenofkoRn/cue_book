@@ -18,9 +18,10 @@ describe CueHeaders do
   end
 
   describe "object" do
+    let(:text) { FactoryBot.build(:text) }
+
     it "must have attr_accessor methods for value for each header" do
       headers = CueHeaders.new
-      text = 'Jóhann Jóhannsson - Sicario: Original Motion Picture Soundtrack '
 
       HEADERS.each_with_index do |header, idx|
         new_value = text + idx.to_s
@@ -40,6 +41,8 @@ describe CueHeaders do
   end
 
   describe ".parse_headers" do
+    let(:hash_texts_ext) { FactoryBot.build(:texts_ext) }
+
     it "with empty array create object w headers equal to nil" do
       headers = CueHeaders.parse_headers([])
 
@@ -57,58 +60,24 @@ describe CueHeaders do
     end
 
     it "valid parse text for each header [\"']?TEXT[\"']?" do
-      array_text = [
-        '',
-        '1965',
-        '\'Ф"антасти"ка\'',
-        '\'Sur"veilla"nce\'',
-        '"Ф"антаст\'и"ка"',
-        '"Sur"veill\'a"nce"',
-        'Ф"антаст\'и\'"ка',
-        'Sur"veill\'a\'"nce',
-        '"Sur"vei;ll.\'a:\'(")n\/ce*"',
-        '"Target"',
-        'Alejandro\'s Song',
-        'Jóhann Jóhannsson',
-        '"Лавкрафт - Сомнамбулический поиск неведомого Кадата.wav"',
-      ]
-      valid_parse = [
-        '',
-        '1965',
-        'Ф"антасти"ка',
-        'Sur"veilla"nce',
-        'Ф"антаст\'и"ка',
-        'Sur"veill\'a"nce',
-        'Ф"антаст\'и\'"ка',
-        'Sur"veill\'a\'"nce',
-        'Sur"vei;ll.\'a:\'(")n\/ce*',
-        'Target',
-        'Alejandro\'s Song',
-        'Jóhann Jóhannsson',
-        'Лавкрафт - Сомнамбулический поиск неведомого Кадата.wav',
-      ]
-
       HEADERS.each do |header|
-        head = if HEADERS_REM.include?(header)
-                "REM #{header.upcase}"
-               else
-                 "#{header.upcase}"
-               end
+        prefix = HEADERS_REM.include?(header) ? 'REM ' : ''
 
-        array_text.each_with_index do |text, idx|
-          line = "#{head} #{text}"
+        hash_texts_ext.each_pair do |text, valid_parse|
+          line = "#{prefix}#{header.upcase} #{text}"
           line += ' WAVE' if header == 'file'
           expect( CueHeaders.parse_headers([line])
-                    .public_send(header.to_sym) ).to eq valid_parse[idx]
+                    .public_send(header.to_sym) ).to eq valid_parse
         end
       end
     end
   end
 
   describe ".get" do
+    let(:text) { FactoryBot.build(:text) }
+
     it "returns all headers as hash with value & type for each" do
       headers = CueHeaders.new
-      text = 'Nobuo Uematsu - Sairin: Kata Tsubasa no Tenshi / Advent: One-Winged Angel '
 
       HEADERS.each_with_index do |header, idx|
         new_value = text + idx.to_s
