@@ -1,4 +1,3 @@
-require_relative 'rspec_helper'
 load_class(__FILE__)
 
 describe CueHeaders do

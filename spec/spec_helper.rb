@@ -1,6 +1,3 @@
-# gem install rspec
-# gem install factory_bot
-
 require 'rspec'
 require 'factory_bot'
 
@@ -35,7 +32,7 @@ RSpec.configure do |config|
 end
 
 def load_class(file)
-  require File.expand_path("../cue_error")
+  require File.expand_path("cue_error")
   klass = File.basename(file).gsub('_spec','')
-  require File.expand_path("../#{klass}")
+  require File.expand_path("#{klass}")
 end

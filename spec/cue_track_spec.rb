@@ -1,4 +1,3 @@
-require_relative 'rspec_helper'
 load_class(__FILE__)
 
 describe CueTrack do
@@ -33,21 +32,6 @@ describe CueTrack do
   describe ".parse_headers" do
     let(:hash_texts_ext) { FactoryBot.build(:texts_ext) }
 
-    track_arr_lines = [
-    '  TRACK 10 AUDIO',
-    '    TITLE "We Are The Ruffest [Original Mix]"',
-    '    PERFORMER "The Prodigy"',
-    '    REM COMPOSER "Liam Howlett"',
-    '    INDEX 01 39:37:73',
-    ]
-    track_values = [
-      10,
-      'We Are The Ruffest [Original Mix]',
-      'The Prodigy',
-      'Liam Howlett',
-      '39:37:73',
-    ]
-
     it "with empty array create object w directives equal to nil" do
       track = CueTrack.parse_track([])
 
@@ -65,6 +49,21 @@ describe CueTrack do
     end
 
     it "valid parse array" do
+      track_arr_lines = [
+        '  TRACK 10 AUDIO',
+        '    TITLE "We Are The Ruffest [Original Mix]"',
+        '    PERFORMER "The Prodigy"',
+        '    REM COMPOSER "Liam Howlett"',
+        '    INDEX 01 39:37:73',
+      ]
+      track_values = [
+        10,
+        'We Are The Ruffest [Original Mix]',
+        'The Prodigy',
+        'Liam Howlett',
+        '39:37:73',
+      ]
+
       track = CueTrack.parse_track(track_arr_lines)
 
       DIRECTIVES.each_with_index do |directive, idx|
@@ -82,7 +81,7 @@ describe CueTrack do
           prefix = directive == 'composer' ? 'REM ' : ''
           line = "    #{prefix}#{directive.upcase} #{text}"
 
-          expect( CueTrack.parse_track([line])
+          expect( CueTrack.parse_track([line] )
                     .public_send(directive.to_sym) ).to eq valid_parse
         end
       end
